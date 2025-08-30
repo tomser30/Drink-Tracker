@@ -8,7 +8,7 @@
   <style>
     :root{
       --bg1:#0b1220; --bg2:#0a0f1c; --card:#0f172a; --border:#1f2937;
-      --txt:#e5e7eb; --muted:#9ca3af; --accent:#10b981; --danger:#ef4444; --warn:#7f1d1d; --line:#22d3ee;
+      --txt:#e5e7eb; --muted:#9ca3af; --accent:#10b981; --warn:#7f1d1d; --line:#22d3ee;
       --shot:#a78bfa; --long:#34d399; --beer:#fbbf24; --wine:#60a5fa;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -24,11 +24,8 @@
     .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
     @media(min-width:768px){ .stats{grid-template-columns:repeat(4,minmax(0,1fr))} }
     .card{background:rgba(15,23,42,.6);border:1px solid var(--border);border-radius:16px;padding:12px}
-    .stat{position:relative}
-    .stat.alert{box-shadow:0 0 0 2px rgba(239,68,68,.5) inset}
     .stat-label{font-size:12px;color:var(--muted)}
     .stat-value{font-size:20px;font-weight:600;margin-top:2px}
-    .stat-hint{font-size:10px;color:#6b7280;margin-top:2px}
     .drinks{grid-template-columns:1fr}
     @media(min-width:768px){ .drinks{grid-template-columns:1fr 1fr} }
     .drink-title{font-size:18px;font-weight:600;margin:0}
@@ -45,19 +42,13 @@
     .input{width:100%;background:#0b1324;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--txt)}
     .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-    @media(min-width:768px){ .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
     .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;margin-top:8px;color:#d1d5db}
     .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
     svg{display:block;width:100%}
     .banner{display:none;align-items:center;justify-content:space-between;background:var(--warn);padding:10px 14px;border-radius:12px;margin-bottom:12px}
     .banner.show{display:flex}
     .shake{animation:shake .6s}
-    @keyframes shake{
-      10%, 90% { transform: translateX(-1px); }
-      20%, 80% { transform: translateX(2px); }
-      30%, 50%, 70% { transform: translateX(-4px); }
-      40%, 60% { transform: translateX(4px); }
-    }
+    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
     .toggle{display:flex;align-items:center;gap:8px}
     .toggle input{width:18px;height:18px}
     .hint{font-size:12px;color:#9ca3af}
@@ -79,10 +70,10 @@
     </div>
 
     <section class="grid stats" id="stats">
-      <div class="card stat" id="stat-bac-card"><div class="stat-label">Aktuell</div><div class="stat-value" id="stat-bac">0.00 ‰</div><div class="stat-hint">Widmark</div></div>
-      <div class="card stat"><div class="stat-label">Bis ~0‰</div><div class="stat-value" id="stat-zero">–</div><div class="stat-hint" id="stat-zero-time">–</div></div>
-      <div class="card stat" id="stat-grams-card"><div class="stat-label">Alkohol</div><div class="stat-value" id="stat-grams">0 g</div><div class="stat-hint">gesamt</div></div>
-      <div class="card stat"><div class="stat-label">Start</div><div class="stat-value" id="stat-start">–</div><div class="stat-hint">1. Drink</div></div>
+      <div class="card"><div class="stat-label">Aktuell</div><div class="stat-value" id="stat-bac">0.00 ‰</div></div>
+      <div class="card"><div class="stat-label">Bis ~0‰</div><div class="stat-value" id="stat-zero">–</div></div>
+      <div class="card" id="stat-grams-card"><div class="stat-label">Alkohol</div><div class="stat-value" id="stat-grams">0 g</div></div>
+      <div class="card"><div class="stat-label">Start</div><div class="stat-value" id="stat-start">–</div></div>
     </section>
 
     <section class="grid drinks" id="controls"></section>
@@ -93,7 +84,7 @@
       <div class="muted" id="log-empty">Noch keine Getränke erfasst.</div>
     </section>
 
-    <p class="muted" style="font-size:12px;margin-top:12px">Hinweis: Grober Schätzer. Verlasse dich niemals ausschließlich darauf, um über Fahren zu entscheiden.</p>
+    <p class="muted" style="font-size:12px;margin-top:12px">Hinweis: Grober Schätzer.</p>
 
     <section class="card" style="margin-top:16px">
       <div class="row"><div class="drink-title">Flussdiagramm</div><div class="muted" style="font-size:12px">(Zeit → unten)</div></div>
@@ -152,309 +143,230 @@
         </div>
       </div>
 
-      <div class="muted" style="font-size:12px;margin-top:10px">
-        Gramm = Volumen(ml) × (%Vol/100) × 0,789. Bei cl: ml = cl × 10.
-      </div>
+      <div class="muted" style="font-size:12px;margin-top:10px">Gramm = ml × (%Vol/100) × 0,789. Bei cl: ml = cl × 10.</div>
     </div>
   </div>
 
   <script>
-    const store = {
-      get(){ try { return JSON.parse(localStorage.getItem('dt_state')||'{}'); } catch { return {}; } },
-      set(obj){ localStorage.setItem('dt_state', JSON.stringify(obj)); }
-    };
+  'use strict';
+  (function(){
+    // Warten, bis DOM sicher steht
+    document.addEventListener('DOMContentLoaded', init);
 
-    const ETHANOL_DENSITY = 0.789;
-    const defaults = {
-      specs: {
-        shot: { unit:'cl', vol:2, abv:40, color:'var(--shot)', label:'Shot' },
-        longdrink: { unit:'cl', vol:4, abv:40, color:'var(--long)', label:'Long Drink' },
-        beer: { unit:'ml', vol:500, abv:5, color:'var(--beer)', label:'Bier' },
-        wine: { unit:'ml', vol:200, abv:12, color:'var(--wine)', label:'Wein' },
-      },
-      weightKg: 75,
-      sex: 'm',
-      beta: 0.15,
-      absorbEnabled: false,
-      absorbMinutes: 20,
-      limitEnabled: false,
-      limitNumber: 10,
-      events: []
-    };
+    function init(){
+      const ETHANOL_DENSITY = 0.789;
+      const defaults = {
+        specs:{
+          shot:{unit:'cl', vol:2,  abv:40, label:'Shot'},
+          longdrink:{unit:'cl', vol:4,  abv:40, label:'Long Drink'},
+          beer:{unit:'ml', vol:500, abv:5,  label:'Bier'},
+          wine:{unit:'ml', vol:200, abv:12, label:'Wein'}
+        },
+        weightKg:75,
+        sex:'m',
+        beta:0.15,
+        absorbEnabled:false,
+        absorbMinutes:20,
+        limitEnabled:false,
+        limitNumber:10,
+        events:[]
+      };
 
-    const state = Object.assign({}, defaults, store.get());
-    state.specs = Object.assign({}, defaults.specs, state.specs||{});
-    ['shot','longdrink','beer','wine'].forEach(k=>{
-      state.specs[k] = Object.assign({}, defaults.specs[k], (state.specs[k]||{}));
-    });
-    if(!Array.isArray(state.events)) state.events = [];
+      const store = {
+        get(){ try { return JSON.parse(localStorage.getItem('dt_state')||'{}'); } catch(e){ return {}; } },
+        set(o){ localStorage.setItem('dt_state', JSON.stringify(o)); }
+      };
 
-    function gramsFor(type){
-      const s = state.specs[type];
-      const ml = s.unit === 'cl' ? s.vol * 10 : s.vol;
-      return ml * (s.abv/100) * ETHANOL_DENSITY;
-    }
+      const state = Object.assign({}, defaults, store.get());
+      state.specs = Object.assign({}, defaults.specs, state.specs||{});
+      if(!Array.isArray(state.events)) state.events = [];
 
-    const controls = document.getElementById('controls');
-    function renderControls(){
-      controls.innerHTML = '';
-      ['shot','longdrink','beer','wine'].forEach(type => {
-        const count = state.events.filter(e => e.type===type).length;
-        const sub = state.specs[type].unit==='cl'
-          ? `${state.specs[type].vol} cl @ ${state.specs[type].abv}% ≈ ${gramsFor(type).toFixed(1)} g`
-          : `${state.specs[type].vol} ml @ ${state.specs[type].abv}% ≈ ${gramsFor(type).toFixed(1)} g`;
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div>
-            <div class="drink-title">${state.specs[type].label}</div>
-            <div class="drink-sub">${sub}</div>
-          </div>
-          <div class="row">
-            <div class="counter" id="count-${type}">${count}</div>
-            <div style="display:flex;gap:8px">
-              <button class="btn" data-minus="${type}">–</button>
-              <button class="btn btn-primary" data-plus="${type}">+</button>
+      const el = {
+        controls: document.getElementById('controls'),
+        log: document.getElementById('log'),
+        logEmpty: document.getElementById('log-empty'),
+        statBac: document.getElementById('stat-bac'),
+        statZero: document.getElementById('stat-zero'),
+        statGrams: document.getElementById('stat-grams'),
+        statStart: document.getElementById('stat-start'),
+        gramsCard: document.getElementById('stat-grams-card'),
+        flow: document.getElementById('flow'),
+        sheet: document.getElementById('sheet'),
+        btnSettings: document.getElementById('btnSettings'),
+        btnClose: document.getElementById('btnClose'),
+        btnDefaults: document.getElementById('btnDefaults'),
+        btnReset: document.getElementById('btnReset'),
+        banner: document.getElementById('limitBanner'),
+        bannerClose: document.getElementById('closeBanner'),
+        inWeight: document.getElementById('inWeight'),
+        inSex: document.getElementById('inSex'),
+        inBeta: document.getElementById('inBeta'),
+        tAbs: document.getElementById('toggleAbsorb'),
+        vAbs: document.getElementById('inAbsorbMin'),
+        tLimit: document.getElementById('toggleLimit'),
+        vLimit: document.getElementById('inLimit')
+      };
+
+      function gramsFor(type){
+        const s = state.specs[type];
+        const ml = s.unit === 'cl' ? s.vol*10 : s.vol;
+        return ml * (s.abv/100) * ETHANOL_DENSITY;
+      }
+
+      function renderControls(){
+        el.controls.innerHTML='';
+        ['shot','longdrink','beer','wine'].forEach(type=>{
+          const count = state.events.filter(e=>e.type===type).length;
+          const spec = state.specs[type];
+          const sub = spec.unit==='cl'
+            ? `${spec.vol} cl @ ${spec.abv}% ≈ ${gramsFor(type).toFixed(1)} g`
+            : `${spec.vol} ml @ ${spec.abv}% ≈ ${gramsFor(type).toFixed(1)} g`;
+          const card = document.createElement('div');
+          card.className='card';
+          card.innerHTML = `
+            <div>
+              <div class="drink-title">${spec.label}</div>
+              <div class="drink-sub">${sub}</div>
             </div>
-          </div>`;
-        controls.appendChild(card);
-      });
-    }
+            <div class="row">
+              <div class="counter" id="count-${type}">${count}</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn" data-minus="${type}">-</button>
+                <button class="btn btn-primary" data-plus="${type}">+</button>
+              </div>
+            </div>`;
+          el.controls.appendChild(card);
+        });
+      }
 
-    function save(){ store.set(state); }
+      function save(){ store.set(state); }
 
-    function formatDuration(hours){
-      if(!isFinite(hours)) return '–';
-      const totalMins = Math.max(0, Math.round(hours*60));
-      const h = Math.floor(totalMins/60);
-      const m = totalMins%60;
-      return `${h}h ${m}m`;
-    }
-    function formatTimeFromNow(hours){
-      if(!isFinite(hours)) return '–';
-      const ms = Math.max(0, Math.round(hours*60)*60*1000);
-      const t = new Date(Date.now()+ms);
-      return t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
-
-    function releasedGramsAt(t){
-      if(state.events.length===0) return 0;
-      let sum = 0;
-      const X = Math.max(1, (state.absorbMinutes||20)); // minutes
-      for(const e of state.events){
-        if(!state.absorbEnabled){
-          if (t >= e.time) sum += e.grams;
-        } else {
-          const dtMin = (t - e.time)/60000;
-          const f = Math.max(0, Math.min(1, dtMin / X));
-          sum += e.grams * f;
+      function releasedGramsAt(t){
+        if(state.events.length===0) return 0;
+        let sum=0; const X=Math.max(1,state.absorbMinutes||20);
+        for(const e of state.events){
+          if(!state.absorbEnabled){ if(t>=e.time) sum+=e.grams; }
+          else{ const dt=(t-e.time)/60000; const f=Math.max(0, Math.min(1, dt/X)); sum+=e.grams*f; }
         }
+        return sum;
       }
-      return sum;
-    }
 
-    function computeBAC(){
-      const r = state.sex==='m' ? 0.68 : 0.55;
-      const now = Date.now();
-      if(state.events.length===0) return {bac:0, hoursToZero:0, totalGrams:0, first:null};
-      const totalReleased = releasedGramsAt(now);
-      const first = new Date(Math.min(...state.events.map(e=>e.time)));
-      const hoursSinceFirst = Math.max(0, (now - first.getTime())/3600000);
-      let bac = (totalReleased / (r*state.weightKg)) - state.beta * hoursSinceFirst;
-      bac = Math.max(0, bac);
-      const hoursToZero = bac<=0 ? 0 : bac / state.beta;
-      const totalGramsEver = state.events.reduce((s,e)=>s+e.grams,0);
-      return {bac, hoursToZero, totalGrams: totalGramsEver, first};
-    }
-
-    function renderStats(highlight=false){
-      const {bac, hoursToZero, totalGrams, first} = computeBAC();
-      document.getElementById('stat-bac').textContent = `${bac.toFixed(2)} ‰`;
-      document.getElementById('stat-zero').textContent = formatDuration(hoursToZero);
-      document.getElementById('stat-zero-time').textContent = hoursToZero>0 ? `~${formatTimeFromNow(hoursToZero)} Uhr` : '–';
-      document.getElementById('stat-grams').textContent = `${Math.round(totalGrams)} g`;
-      document.getElementById('stat-start').textContent = first ? first.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '–';
-      const gramsCard = document.getElementById('stat-grams-card');
-      gramsCard.classList.toggle('alert', highlight);
-    }
-
-    function renderLog(){
-      const log = document.getElementById('log');
-      const empty = document.getElementById('log-empty');
-      log.innerHTML = '';
-      if(state.events.length===0){ empty.style.display='block'; return; }
-      empty.style.display='none';
-      [...state.events].reverse().forEach(e => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="pill" style="color:#e5e7eb;text-transform:capitalize">${e.type}</span>
-            <span class="muted">${new Date(e.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-          </div>
-          <span>${e.grams.toFixed(1)} g</span>
-        `;
-        log.appendChild(li);
-      });
-    }
-
-    function renderFlow(){
-      const svg = document.getElementById('flow');
-      const width = 640, height = 260, pad = 18, axisX = 60;
-      svg.innerHTML = '';
-      if(state.events.length===0){
-        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
-        txt.setAttribute('x', 10); txt.setAttribute('y', 20); txt.setAttribute('fill', '#9ca3af');
-        txt.textContent = 'Noch keine Daten. Füge Getränke hinzu, um den Verlauf zu sehen.';
-        svg.appendChild(txt); return;
+      function computeBAC(){
+        const r = state.sex==='m'?0.68:0.55; const now=Date.now();
+        if(state.events.length===0) return {bac:0,hoursToZero:0,totalGrams:0,first:null};
+        const released = releasedGramsAt(now);
+        const first = new Date(Math.min.apply(null, state.events.map(e=>e.time)));
+        const hours = Math.max(0,(now-first.getTime())/3600000);
+        let bac = (released/(r*state.weightKg)) - state.beta*hours; bac=Math.max(0,bac);
+        const hoursToZero = bac<=0?0: bac/state.beta;
+        const totalGrams = state.events.reduce((s,e)=>s+e.grams,0);
+        return {bac,hoursToZero,totalGrams,first};
       }
-      const data = [...state.events].sort((a,b)=>a.time-b.time);
-      const t0 = data[0].time, t1 = data[data.length-1].time, tspan = Math.max(1, t1-t0);
-      let cum = 0;
-      const points = data.map(d => {
-        cum += 1;
-        const y = pad + ((d.time - t0) / tspan) * (height - 2*pad);
-        const x = axisX + (cum / Math.max(1, data.length)) * (width - axisX - pad);
-        return {...d, x, y, cum};
-      });
-      const axis = document.createElementNS('http://www.w3.org/2000/svg','line');
-      axis.setAttribute('x1', axisX); axis.setAttribute('y1', pad);
-      axis.setAttribute('x2', axisX); axis.setAttribute('y2', height-pad);
-      axis.setAttribute('stroke', '#334155'); axis.setAttribute('stroke-width','2'); svg.appendChild(axis);
-      const tEarly = document.createElementNS('http://www.w3.org/2000/svg','text');
-      tEarly.setAttribute('x', axisX-8); tEarly.setAttribute('y', pad-4); tEarly.setAttribute('text-anchor','end');
-      tEarly.setAttribute('font-size','10'); tEarly.setAttribute('fill','#94a3b8'); tEarly.textContent='früh'; svg.appendChild(tEarly);
-      const tLate = document.createElementNS('http://www.w3.org/2000/svg','text');
-      tLate.setAttribute('x', axisX-8); tLate.setAttribute('y', height-pad+12); tLate.setAttribute('text-anchor','end');
-      tLate.setAttribute('font-size','10'); tLate.setAttribute('fill','#94a3b8'); tLate.textContent='spät'; svg.appendChild(tLate);
-      const pl = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-      pl.setAttribute('fill','none'); pl.setAttribute('stroke','var(--line)'); pl.setAttribute('stroke-width','2');
-      pl.setAttribute('points', points.map(p=>`${p.x},${p.y}`).join(' ')); svg.appendChild(pl);
-      points.forEach(p => {
-        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-        c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 5);
-        const col = p.type==='shot' ? 'var(--shot)' : p.type==='longdrink' ? 'var(--long)' : p.type==='beer' ? 'var(--beer)' : 'var(--wine)';
-        c.setAttribute('fill', col); svg.appendChild(c);
-        const tt = document.createElementNS('http://www.w3.org/2000/svg','text');
-        tt.setAttribute('x', p.x+8); tt.setAttribute('y', p.y-6); tt.setAttribute('font-size','10'); tt.setAttribute('fill','#cbd5e1');
-        tt.textContent = p.type; svg.appendChild(tt);
-        const tm = document.createElementNS('http://www.w3.org/2000/svg','text');
-        tm.setAttribute('x', p.x+8); tm.setAttribute('y', p.y+8); tm.setAttribute('font-size','10'); tm.setAttribute('fill','#94a3b8');
-        tm.textContent = new Date(p.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); svg.appendChild(tm);
-      });
-    }
 
-    controls.addEventListener('click', (e)=>{
-      const plus = e.target.getAttribute('data-plus');
-      const minus = e.target.getAttribute('data-minus');
-      if(plus){
-        const grams = gramsFor(plus);
-        state.events.push({ type: plus, grams, time: Date.now() });
-        save();
-        const total = state.events.length;
-        if(state.limitEnabled && total > state.limitNumber){
-          document.getElementById('limitVal').textContent = state.limitNumber;
-          document.getElementById('limitBanner').classList.add('show');
-          const el = document.getElementById('count-'+plus);
-          if(el){ el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 800); }
-          renderStats(true);
-          setTimeout(()=>renderStats(false), 10000);
-        } else {
-          renderStats(false);
+      function fmtDur(h){ if(!isFinite(h)) return '–'; const m=Math.max(0,Math.round(h*60)); return `${Math.floor(m/60)}h ${m%60}m`; }
+      function fmtTimeFromNow(h){ if(!isFinite(h)) return '–'; const t=new Date(Date.now()+Math.max(0,Math.round(h*60))*60000); return t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+      function renderStats(highlight){
+        const r=computeBAC();
+        el.statBac.textContent = r.bac.toFixed(2)+' ‰';
+        el.statZero.textContent = fmtDur(r.hoursToZero) + (r.hoursToZero>0?` (~${fmtTimeFromNow(r.hoursToZero)} Uhr)`:'');
+        el.statGrams.textContent = Math.round(r.totalGrams)+' g';
+        el.statStart.textContent = r.first?r.first.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'–';
+        if(el.gramsCard){ el.gramsCard.style.boxShadow = highlight? '0 0 0 2px rgba(239,68,68,.5) inset' : 'none'; }
+      }
+
+      function renderLog(){
+        el.log.innerHTML='';
+        if(state.events.length===0){ el.logEmpty.style.display='block'; return; }
+        el.logEmpty.style.display='none';
+        state.events.slice().reverse().forEach(e=>{
+          const li=document.createElement('li');
+          li.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><span class="pill" style="color:#e5e7eb;text-transform:capitalize">${e.type}</span><span class="muted">${new Date(e.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div><span>${e.grams.toFixed(1)} g</span>`;
+          el.log.appendChild(li);
+        });
+      }
+
+      function renderFlow(){
+        const svg=el.flow; svg.innerHTML=''; const width=640, height=260, pad=18, axisX=60;
+        if(state.events.length===0){
+          const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+          txt.setAttribute('x',10); txt.setAttribute('y',20); txt.setAttribute('fill','#9ca3af');
+          txt.textContent='Noch keine Daten. Füge Getränke hinzu, um den Verlauf zu sehen.'; svg.appendChild(txt); return;
         }
-        updateUI();
+        const data=state.events.slice().sort((a,b)=>a.time-b.time);
+        const t0=data[0].time, t1=data[data.length-1].time, span=Math.max(1,t1-t0);
+        let cum=0; const pts=data.map(d=>{cum++; const y=pad+((d.time-t0)/span)*(height-2*pad); const x=axisX+(cum/Math.max(1,data.length))*(width-axisX-pad); return {x,y,...d};});
+        const axis=document.createElementNS('http://www.w3.org/2000/svg','line'); axis.setAttribute('x1',axisX); axis.setAttribute('y1',pad); axis.setAttribute('x2',axisX); axis.setAttribute('y2',height-pad); axis.setAttribute('stroke','#334155'); axis.setAttribute('stroke-width','2'); svg.appendChild(axis);
+        const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline'); pl.setAttribute('fill','none'); pl.setAttribute('stroke','var(--line)'); pl.setAttribute('stroke-width','2'); pl.setAttribute('points', pts.map(p=>p.x+','+p.y).join(' ')); svg.appendChild(pl);
+        pts.forEach(p=>{ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',5); const col=p.type==='shot'?'var(--shot)':p.type==='longdrink'?'var(--long)':p.type==='beer'?'var(--beer)':'var(--wine)'; c.setAttribute('fill',col); svg.appendChild(c); });
       }
-      if(minus){
-        for(let i=state.events.length-1;i>=0;i--){
-          if(state.events[i].type===minus){ state.events.splice(i,1); break; }
+
+      el.controls.addEventListener('click', (evt)=>{
+        const plus = evt.target.getAttribute('data-plus');
+        const minus = evt.target.getAttribute('data-minus');
+        if(plus){
+          const grams = gramsFor(plus);
+          state.events.push({type:plus, grams:grams, time:Date.now()});
+          save();
+          if(state.limitEnabled && state.events.length>state.limitNumber){
+            document.getElementById('limitVal').textContent = state.limitNumber;
+            el.banner.classList.add('show');
+          }
+          updateUI();
         }
-        save();
-        updateUI();
+        if(minus){
+          for(let i=state.events.length-1;i>=0;i--){ if(state.events[i].type===minus){ state.events.splice(i,1); break; } }
+          save(); updateUI();
+        }
+      });
+
+      el.btnSettings.onclick=()=>{ el.sheet.style.display='flex'; renderSpecs(); fillSettings(); };
+      el.btnClose.onclick=()=>{ el.sheet.style.display='none'; };
+      el.btnDefaults.onclick=()=>{ Object.assign(state, JSON.parse(JSON.stringify(defaults))); save(); renderSpecs(); updateUI(); };
+      el.btnReset.onclick=()=>{ state.events=[]; save(); updateUI(); };
+      el.bannerClose.onclick=()=>{ el.banner.classList.remove('show'); };
+
+      function fillSettings(){
+        el.inWeight.value=state.weightKg; el.inSex.value=state.sex; el.inBeta.value=state.beta;
+        el.tAbs.checked=state.absorbEnabled; el.vAbs.value=state.absorbMinutes;
+        el.tLimit.checked=state.limitEnabled; el.vLimit.value=state.limitNumber;
       }
-    });
 
-    const sheet = document.getElementById('sheet');
-    document.getElementById('btnSettings').onclick = () => {
-      sheet.style.display='flex';
-      renderSpecs();
-      document.getElementById('inWeight').value = state.weightKg;
-      document.getElementById('inSex').value = state.sex;
-      document.getElementById('inBeta').value = state.beta;
-      document.getElementById('toggleAbsorb').checked = state.absorbEnabled;
-      document.getElementById('inAbsorbMin').value = state.absorbMinutes;
-      document.getElementById('toggleLimit').checked = state.limitEnabled;
-      document.getElementById('inLimit').value = state.limitNumber;
-    };
-    document.getElementById('btnClose').onclick = () => { sheet.style.display='none'; };
-    document.getElementById('btnDefaults').onclick = () => {
-      Object.assign(state, JSON.parse(JSON.stringify(defaults)));
-      save();
-      renderSpecs(); updateUI();
-    };
-    document.getElementById('btnReset').onclick = () => { state.events = []; save(); updateUI(); };
-
-    document.getElementById('closeBanner').onclick = () => {
-      document.getElementById('limitBanner').classList.remove('show');
-    };
-
-    function renderSpecs(){
-      const box = document.getElementById('specs');
-      box.innerHTML='';
-      const makeSpec = (key, label, unit) => {
-        const div = document.createElement('div'); div.className='card';
-        div.innerHTML = `
-          <div class="drink-sub" style="margin-bottom:6px;color:#d1d5db">${label}</div>
+      function renderSpecs(){
+        const box=document.getElementById('specs'); box.innerHTML='';
+        const add=(key,label,unit)=>{
+          const d=document.createElement('div'); d.className='card';
+          d.innerHTML=`<div class="drink-sub" style="margin-bottom:6px;color:#d1d5db">${label}</div>
           <label class="stat-label">Menge (${unit})</label>
-          <input id="vol-${key}" type="number" class="input" step="${unit==='cl' ? '0.5':'5'}" value="${state.specs[key].vol}">
+          <input id="vol-${key}" type="number" class="input" step="${unit==='cl'?'0.5':'5'}" value="${state.specs[key].vol}">
           <label class="stat-label" style="margin-top:6px;display:block">Alkoholgehalt (% Vol.)</label>
           <input id="abv-${key}" type="number" class="input" step="0.5" value="${state.specs[key].abv}">
           <div class="muted" style="font-size:11px;margin-top:6px">≈ <span id="g-${key}"></span> g reiner Alkohol</div>`;
-        box.appendChild(div);
-      };
-      makeSpec('shot','Shot','cl');
-      makeSpec('longdrink','Long Drink','cl');
-      makeSpec('beer','Bier','ml');
-      makeSpec('wine','Wein','ml');
-
-      ['shot','longdrink','beer','wine'].forEach(k=>{
-        const vol = document.getElementById('vol-'+k);
-        const abv = document.getElementById('abv-'+k);
-        const updateSpec = () => {
-          state.specs[k].vol = parseFloat(vol.value)||0;
-          state.specs[k].abv = parseFloat(abv.value)||0;
-          document.getElementById('g-'+k').textContent = gramsFor(k).toFixed(1);
-          save(); renderControls();
+          box.appendChild(d);
         };
-        vol.oninput = updateSpec; abv.oninput = updateSpec; updateSpec();
-      });
+        add('shot','Shot','cl'); add('longdrink','Long Drink','cl'); add('beer','Bier','ml'); add('wine','Wein','ml');
+        ['shot','longdrink','beer','wine'].forEach(k=>{
+          const vol=document.getElementById('vol-'+k); const abv=document.getElementById('abv-'+k);
+          const upd=()=>{ state.specs[k].vol=parseFloat(vol.value)||0; state.specs[k].abv=parseFloat(abv.value)||0; document.getElementById('g-'+k).textContent=gramsFor(k).toFixed(1); save(); renderControls(); };
+          vol.oninput=upd; abv.oninput=upd; upd();
+        });
+        el.inWeight.oninput=()=>{ state.weightKg=parseFloat(el.inWeight.value)||0; save(); updateUI(); };
+        el.inSex.onchange=()=>{ state.sex=el.inSex.value; save(); updateUI(); };
+        el.inBeta.oninput=()=>{ state.beta=parseFloat(el.inBeta.value)||0; save(); updateUI(); };
+        el.tAbs.onchange=()=>{ state.absorbEnabled=el.tAbs.checked; save(); updateUI(); };
+        el.vAbs.oninput=()=>{ state.absorbMinutes=Math.max(1, parseInt(el.vAbs.value)||20); save(); updateUI(); };
+        el.tLimit.onchange=()=>{ state.limitEnabled=el.tLimit.checked; save(); updateUI(); };
+        el.vLimit.oninput=()=>{ state.limitNumber=Math.max(1, parseInt(el.vLimit.value)||10); save(); updateUI(); };
+      }
 
-      const w = document.getElementById('inWeight');
-      const s = document.getElementById('inSex');
-      const b = document.getElementById('inBeta');
-      const tAbs = document.getElementById('toggleAbsorb');
-      const vAbs = document.getElementById('inAbsorbMin');
-      const tLimit = document.getElementById('toggleLimit');
-      const vLimit = document.getElementById('inLimit');
+      function updateUI(){
+        renderControls(); renderStats(); renderLog(); renderFlow();
+      }
 
-      w.oninput = () => { state.weightKg = parseFloat(w.value)||0; save(); updateUI(); };
-      s.onchange = () => { state.sex = s.value; save(); updateUI(); };
-      b.oninput = () => { state.beta = parseFloat(b.value)||0; save(); updateUI(); };
-
-      tAbs.onchange = () => { state.absorbEnabled = tAbs.checked; save(); updateUI(); };
-      vAbs.oninput = () => { state.absorbMinutes = Math.max(1, parseInt(vAbs.value)||20); save(); updateUI(); };
-
-      tLimit.onchange = () => { state.limitEnabled = tLimit.checked; save(); updateUI(); };
-      vLimit.oninput = () => { state.limitNumber = Math.max(1, parseInt(vLimit.value)||10); save(); updateUI(); };
+      setInterval(function(){ renderStats(); }, 30000);
+      updateUI();
     }
-
-    function updateUI(){
-      renderControls();
-      renderStats();
-      renderLog();
-      renderFlow();
-    }
-
-    setInterval(()=>{ renderStats(); }, 30000);
-    updateUI();
+  })();
   </script>
 </body>
 </html>
