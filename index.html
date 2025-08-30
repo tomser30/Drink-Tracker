@@ -84,7 +84,7 @@
       <div class="muted" id="log-empty">Noch keine Getränke erfasst.</div>
     </section>
 
-    <p class="muted" style="font-size:12px;margin-top:12px">Hinweis: Grober Schätzer.</p>
+    <p class="muted" style="font-size:12px;margin-top:12px">Hinweis: Grober Schätzer. Verlasse dich niemals ausschließlich darauf, um über Fahren zu entscheiden.</p>
 
     <section class="card" style="margin-top:16px">
       <div class="row"><div class="drink-title">Flussdiagramm</div><div class="muted" style="font-size:12px">(Zeit → unten)</div></div>
@@ -150,7 +150,6 @@
   <script>
   'use strict';
   (function(){
-    // Warten, bis DOM sicher steht
     document.addEventListener('DOMContentLoaded', init);
 
     function init(){
@@ -169,7 +168,7 @@
         absorbMinutes:20,
         limitEnabled:false,
         limitNumber:10,
-        events:[]
+        events:[] // {type, grams, time, unit, vol, abv}
       };
 
       const store = {
@@ -180,6 +179,13 @@
       const state = Object.assign({}, defaults, store.get());
       state.specs = Object.assign({}, defaults.specs, state.specs||{});
       if(!Array.isArray(state.events)) state.events = [];
+
+      // MIGRATION: Ältere Events ohne Snapshot mit defaults auffüllen (nur Anzeige)
+      function withSnapshot(e){
+        if(e.unit && (e.vol!=null) && (e.abv!=null)) return e;
+        const s = state.specs[e.type] || {unit:'ml', vol:0, abv:0};
+        return Object.assign({unit:s.unit, vol:s.vol, abv:s.abv}, e);
+      }
 
       const el = {
         controls: document.getElementById('controls'),
@@ -207,10 +213,13 @@
         vLimit: document.getElementById('inLimit')
       };
 
+      function gramsForSpec(unit, vol, abv){
+        const ml = unit==='cl' ? vol*10 : vol;
+        return ml * (abv/100) * ETHANOL_DENSITY;
+      }
       function gramsFor(type){
         const s = state.specs[type];
-        const ml = s.unit === 'cl' ? s.vol*10 : s.vol;
-        return ml * (s.abv/100) * ETHANOL_DENSITY;
+        return gramsForSpec(s.unit, s.vol, s.abv);
       }
 
       function renderControls(){
@@ -244,7 +253,8 @@
       function releasedGramsAt(t){
         if(state.events.length===0) return 0;
         let sum=0; const X=Math.max(1,state.absorbMinutes||20);
-        for(const e of state.events){
+        for(const e0 of state.events){
+          const e = withSnapshot(e0);
           if(!state.absorbEnabled){ if(t>=e.time) sum+=e.grams; }
           else{ const dt=(t-e.time)/60000; const f=Math.max(0, Math.min(1, dt/X)); sum+=e.grams*f; }
         }
@@ -272,16 +282,24 @@
         el.statZero.textContent = fmtDur(r.hoursToZero) + (r.hoursToZero>0?` (~${fmtTimeFromNow(r.hoursToZero)} Uhr)`:'');
         el.statGrams.textContent = Math.round(r.totalGrams)+' g';
         el.statStart.textContent = r.first?r.first.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'–';
-        if(el.gramsCard){ el.gramsCard.style.boxShadow = highlight? '0 0 0 2px rgba(239,68,68,.5) inset' : 'none'; }
+        el.gramsCard.style.boxShadow = highlight? '0 0 0 2px rgba(239,68,68,.5) inset' : 'none';
       }
 
       function renderLog(){
         el.log.innerHTML='';
         if(state.events.length===0){ el.logEmpty.style.display='block'; return; }
         el.logEmpty.style.display='none';
-        state.events.slice().reverse().forEach(e=>{
-          const li=document.createElement('li');
-          li.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><span class="pill" style="color:#e5e7eb;text-transform:capitalize">${e.type}</span><span class="muted">${new Date(e.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div><span>${e.grams.toFixed(1)} g</span>`;
+        state.events.slice().reverse().forEach(e0 => {
+          const e = withSnapshot(e0);
+          const specText = e.unit==='cl' ? `${e.vol} cl @ ${e.abv}%` : `${e.vol} ml @ ${e.abv}%`;
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="pill" style="color:#e5e7eb;text-transform:capitalize">${e.type}</span>
+              <span class="muted">${new Date(e.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+              <span class="muted">• ${specText}</span>
+            </div>
+            <span>${e.grams.toFixed(1)} g</span>`;
           el.log.appendChild(li);
         });
       }
@@ -305,12 +323,16 @@
         const plus = evt.target.getAttribute('data-plus');
         const minus = evt.target.getAttribute('data-minus');
         if(plus){
-          const grams = gramsFor(plus);
-          state.events.push({type:plus, grams:grams, time:Date.now()});
+          // SNAPSHOT der aktuellen Spezifikation sichern
+          const s = state.specs[plus];
+          const grams = gramsForSpec(s.unit, s.vol, s.abv);
+          state.events.push({type:plus, grams, time:Date.now(), unit:s.unit, vol:s.vol, abv:s.abv});
           save();
           if(state.limitEnabled && state.events.length>state.limitNumber){
             document.getElementById('limitVal').textContent = state.limitNumber;
             el.banner.classList.add('show');
+            const c=document.getElementById('count-'+plus); if(c){ c.classList.add('shake'); setTimeout(()=>c.classList.remove('shake'),800); }
+            renderStats(true); setTimeout(()=>renderStats(false), 10000);
           }
           updateUI();
         }
